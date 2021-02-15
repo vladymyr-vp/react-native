@@ -4,7 +4,19 @@ import { StyleSheet, Text, View, Image } from 'react-native';
 import { getWeatherData } from './services/APIService';
 
 export default function App() {
-  const [location, setLocation] = useState({});
+  const [location, setLocation] = useState({
+    coords: {
+      accuracy: 0,
+      altitude: 0,
+      altitudeAccuracy: 0,
+      heading: 0,
+      latitude: 0,
+      longitude: 0,
+      speed: 0,
+    },
+    mocked: false,
+    timestamp: 0,
+  });
   const [city, setCity] = useState('');
   const [temp, setTemp] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,13 +33,15 @@ export default function App() {
     navigator.geolocation.getCurrentPosition(
       position => {
         const location = JSON.stringify(position);
-        console.log(location);
-        setLocation({ location });
+
+        setLocation(JSON.parse(location));
       },
       error => alert(error.message),
       { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 },
     );
   }, []);
+
+  console.log(location);
 
   useEffect(() => {
     if (city.length === 0) {
@@ -64,6 +78,7 @@ export default function App() {
       <Text>Humidity: {humidity}</Text>
       <Text>Wind: {wind} m/s</Text>
       <Text>Visibility: {visibility}</Text>
+      {/* <Text>{location.timestamp}</Text> */}
       <StatusBar style="auto" />
     </View>
   );
