@@ -1,7 +1,35 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Image } from 'react-native';
+import { StyleSheet, Text, View, Image, ImageBackground } from 'react-native';
+import Geocoder from 'react-native-geocoding';
 import { getWeatherData } from './services/APIService';
+
+const styles = StyleSheet.create({
+  containerWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stretch: {
+    width: 100,
+    height: 100,
+    resizeMode: 'stretch',
+    marginBottom: 0,
+  },
+  text: {
+    color: '#fff',
+  },
+  city: {
+    fontSize: 24,
+    marginBottom: 20,
+  },
+});
 
 export default function App() {
   const [location, setLocation] = useState({
@@ -22,34 +50,42 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [wind, setWind] = useState('');
   const [humidity, setHumidity] = useState('');
-  const [visibility, setVisibility] = useState('');
   const [weatherDesc, setWeatherDesc] = useState('');
   const [icon, setIcon] = useState('');
+
+  let isGeolocationIsReady = false;
 
   const fahrenheit = (temp * 1.8 - 459.67).toFixed(1);
   const celsius = (temp - 273.15).toFixed(1);
 
   useEffect(() => {
+    Geocoder.init('....');
     navigator.geolocation.getCurrentPosition(
       position => {
         const location = JSON.stringify(position);
 
         setLocation(JSON.parse(location));
+        Geocoder.from(position.coords.latitude, position.coords.longitude)
+          .then(json => {
+            const addressComponent = json.results[0].address_components;
+            setCity(addressComponent[3].long_name);
+          })
+          .catch(error => console.warn(error));
       },
       error => alert(error.message),
       { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 },
     );
+    isGeolocationIsReady = true;
   }, []);
 
   console.log(location);
 
   useEffect(() => {
-    if (city.length === 0) {
+    if (isGeolocationIsReady) {
       setIsLoading(true);
-      getWeatherData('Kiev').then(data => {
+      getWeatherData(city).then(data => {
         setCity(data.name);
         setHumidity(data.main.humidity);
-        setVisibility(data.visibility);
         setTemp(data.main.temp);
         setWeatherDesc(data.weather[0].description);
         setWind(data.wind.speed);
@@ -57,43 +93,32 @@ export default function App() {
       });
       setIsLoading(false);
     }
-  }, [city]);
+  }, []);
 
   return isLoading ? (
-    <Text style={styles.container}>Loading...</Text>
+    <Text style={styles.containerWrapper}>Loading...</Text>
   ) : (
-    <View style={styles.container}>
-      <Image
-        style={styles.stretch}
-        source={{
-          uri: `http://openweathermap.org/img/wn/${icon}.png`,
-        }}
-      />
-      <Text>{city}</Text>
-      <Text>
-        {fahrenheit} &#8457; / {celsius} &#8451;
-      </Text>
+    <ImageBackground
+      source={{ uri: 'https://mfiles.alphacoders.com/747/747892.jpg' }}
+      style={styles.container}
+    >
+      <View style={styles.container}>
+        <Image
+          style={styles.stretch}
+          source={{
+            uri: `http://openweathermap.org/img/wn/${icon}.png`,
+          }}
+        />
 
-      <Text> {weatherDesc}</Text>
-      <Text>Humidity: {humidity}</Text>
-      <Text>Wind: {wind} m/s</Text>
-      <Text>Visibility: {visibility}</Text>
-      {/* <Text>{location.timestamp}</Text> */}
-      <StatusBar style="auto" />
-    </View>
+        <Text style={[styles.text, styles.city]}>{city}</Text>
+        <Text style={styles.text}>
+          {fahrenheit} &#8457; / {celsius} &#8451;
+        </Text>
+        <Text style={styles.text}> {weatherDesc}</Text>
+        <Text style={styles.text}>Humidity: {humidity}</Text>
+        <Text style={styles.text}>Wind: {wind} m/s</Text>
+        <StatusBar style="auto" />
+      </View>
+    </ImageBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stretch: {
-    width: 50,
-    height: 50,
-    resizeMode: 'stretch',
-  },
-});
